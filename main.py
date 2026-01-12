@@ -27,6 +27,11 @@ async def home(request: Request):
     return templates.TemplateResponse("index.html", {"request": request})
 
 
+@app.get("/health-check")
+def health():
+    return {"status": "ok"}
+
+
 @app.post("/chat")
 async def chat(request: Request):
     data = await request.json()
