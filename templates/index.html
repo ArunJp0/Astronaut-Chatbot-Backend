@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <title>Astronaut Mental Wellness</title>
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+
+<div class="app-container">
+
+    <!-- LEFT PANEL -->
+    <div class="left-panel">
+        <h1>Astronaut Wellness Chatbot</h1>
+        <p>Your calm mental health companion in space.</p>
+
+        <!-- You can replace image URLs later -->
+        <img src="https://plus.unsplash.com/premium_photo-1717916843908-7bbee16bad20" />
+        
+    </div>
+
+    <!-- RIGHT PANEL -->
+    <div class="chat-panel">
+        <div id="chat-box"></div>
+
+        <div class="input-area">
+            <input type="text" id="user-input" placeholder="Type a message..." />
+            <button class="icon-btn send-btn" onclick="sendMessage()"> ➤ </button>
+
+            <!-- PUSH TO TALK -->
+            <button class="icon-btn mic-btn"
+            onmousedown="startRecording()"
+            onmouseup="stopRecording()"
+            >
+             🎙
+            </button>
+        </div>
+    </div>
+</div>
+
+<script>
+let mediaRecorder;
+let audioChunks = [];
+let stream;
+
+function autoScroll() {
+    const chatBox = document.getElementById("chat-box");
+    chatBox.scrollTop = chatBox.scrollHeight;
+}
+
+/* TEXT CHAT */
+async function sendMessage() {
+    const input = document.getElementById("user-input");
+    const message = input.value;
+    if (!message) return;
+
+    document.getElementById("chat-box").innerHTML += `
+        <div class="bubble user">${message}</div>
+    `;
+    autoScroll();
+    input.value = "";
+
+    const response = await fetch("/chat", {
+        method: "POST",
+        headers: {"Content-Type": "application/json"},
+        body: JSON.stringify({message})
+    });
+
+    const data = await response.json();
+
+    document.getElementById("chat-box").innerHTML += `
+        <div class="bubble bot">${data.reply}</div>
+    `;
+    autoScroll();
+}
+
+document.getElementById("user-input").addEventListener("keydown", function(e) {
+    if (e.key === "Enter") {
+        e.preventDefault(); // stop new line
+        sendMessage();
+    }
+});
+
+/* VOICE CHAT */
+function startRecording() {
+    audioChunks = [];
+
+    navigator.mediaDevices.getUserMedia({ audio: true }).then(s => {
+        stream = s;
+        mediaRecorder = new MediaRecorder(stream);
+        mediaRecorder.start();
+
+        mediaRecorder.ondataavailable = e => audioChunks.push(e.data);
+    });
+}
+
+function stopRecording() {
+    if (!mediaRecorder) return;
+
+    mediaRecorder.stop();
+    stream.getTracks().forEach(track => track.stop());
+
+    mediaRecorder.onstop = async () => {
+        const audioBlob = new Blob(audioChunks, { type: "audio/webm" });
+        const audioURL = URL.createObjectURL(audioBlob);
+
+        document.getElementById("chat-box").innerHTML += `
+            <div class="bubble user">
+                <audio controls src="${audioURL}"></audio>
+            </div>
+        `;
+        autoScroll();
+
+        const formData = new FormData();
+        formData.append("file", audioBlob, "voice.webm");
+
+        const response = await fetch("/voice-chat", {
+            method: "POST",
+            body: formData
+        });
+
+        const data = await response.json();
+
+        document.getElementById("chat-box").innerHTML += `
+            <div class="bubble bot">
+                <audio controls src="${data.audio_reply}"></audio>
+            </div>
+        `;
+        autoScroll();
+    };
+}
+</script>
+
+</body>
+</html>
