@@ -11,7 +11,7 @@ import uuid
 import os
 
 # CONFIGURE GEMINI
-genai.configure(api_key="AIzaSyDQZJopWedmbjnADwaYpt6bNxgHDdwLCnQ")
+genai.configure(api_key=os.getenv("GEMINI_API_KEY"))
 
 model = genai.GenerativeModel("gemini-2.5-flash-lite")
 
