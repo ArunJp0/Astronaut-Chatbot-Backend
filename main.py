@@ -10,12 +10,15 @@ from gtts import gTTS
 import uuid
 import os
 
+# Ensure directories exist
+os.makedirs("static/audio", exist_ok=True)
+
 # CONFIGURE GEMINI
 genai.configure(api_key=os.getenv("GEMINI_API_KEY"))
 
-model = genai.GenerativeModel("gemini-2.5-flash-lite")
+model = genai.GenerativeModel("models/gemini-1.5-flash")
 
-whisper_model = whisper.load_model("base")
+whisper_model = WhisperModel("base")
 
 app = FastAPI()
 templates = Jinja2Templates(directory="templates")
@@ -58,8 +61,9 @@ async def voice_chat(file: UploadFile = File(...)):
         f.write(await file.read())
 
     # VOICE → TEXT (STT)
-    result = whisper_model.transcribe(audio_path)
-    user_text = result["text"]
+    segments, info = whisper_model.transcribe(audio_path)
+    user_text = "".join(segment.text for segment in segments)
+
 
     # AI RESPONSE
     prompt = f"""
