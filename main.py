@@ -15,9 +15,9 @@ import os
 os.makedirs("static/audio", exist_ok=True)
 
 # CONFIGURE GEMINI
-genai.configure(api_key=os.getenv("GEMINI_API_KEY"))
+genai.configure(api_key=os.getenv("GEMINI_API_KEY"), version="v1")
 
-model = genai.GenerativeModel("gemini-pro")
+model = genai.GenerativeModel("gemini-2.5-flash")
 
 whisper_model = WhisperModel("base")
 
