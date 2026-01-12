@@ -7,6 +7,7 @@ from fastapi.staticfiles import StaticFiles
 from faster_whisper import WhisperModel
 from fastapi import UploadFile, File
 from gtts import gTTS
+from fastapi.middleware.cors import CORSMiddleware
 import uuid
 import os
 
@@ -23,6 +24,14 @@ whisper_model = WhisperModel("base")
 app = FastAPI()
 templates = Jinja2Templates(directory="templates")
 app.mount("/static", StaticFiles(directory="static"), name="static")
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],   # allow all origins (OK for MVP)
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 
 @app.get("/", response_class=HTMLResponse)
