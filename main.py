@@ -56,9 +56,15 @@ async def chat(request: Request):
     Assistant:
     """
 
-    response = model.generate_content(prompt)
+    try:
+     response = model.generate_content(prompt)
+     return JSONResponse({"reply": response.text})
+    except Exception as e:
+     return JSONResponse(
+        {"error": str(e)},
+        status_code=500
+    )
 
-    return JSONResponse({"reply": response.text})
 
 
 @app.post("/voice-chat")
