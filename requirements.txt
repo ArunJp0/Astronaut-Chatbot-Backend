@@ -2,3 +2,5 @@ fastapi
 uvicorn
 jinja2
 google-generativeai
+faster-whisper
+ffmpeg-python

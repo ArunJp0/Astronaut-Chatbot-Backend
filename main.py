@@ -4,7 +4,7 @@ from fastapi.templating import Jinja2Templates
 import google.generativeai as genai
 from prompt import SYSTEM_PROMPT
 from fastapi.staticfiles import StaticFiles
-import whisper
+from faster_whisper import WhisperModel
 from fastapi import UploadFile, File
 from gtts import gTTS
 import uuid
