@@ -6,3 +6,4 @@ faster-whisper
 ffmpeg-python
 gTTS
 python-multipart
+supabase

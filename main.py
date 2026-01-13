@@ -1,4 +1,4 @@
-from fastapi import FastAPI, Request
+from fastapi import FastAPI, Request, Depends
 from fastapi.responses import HTMLResponse, JSONResponse
 from fastapi.templating import Jinja2Templates
 import google.generativeai as genai
@@ -8,8 +8,27 @@ from faster_whisper import WhisperModel
 from fastapi import UploadFile, File
 from gtts import gTTS
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi import Header, HTTPException
+from supabase import create_client
 import uuid
 import os
+
+SUPABASE_URL = os.getenv("SUPABASE_URL")
+SUPABASE_ANON_KEY = os.getenv("SUPABASE_ANON_KEY")
+
+supabase = create_client(SUPABASE_URL, SUPABASE_ANON_KEY)
+
+def verify_user(authorization: str = Header(None)):
+    if not authorization:
+        raise HTTPException(status_code=401, detail="Missing auth token")
+
+    token = authorization.replace("Bearer ", "")
+    user = supabase.auth.get_user(token)
+
+    if not user:
+        raise HTTPException(status_code=401, detail="Invalid token")
+
+    return user
 
 # Ensure directories exist
 os.makedirs("static/audio", exist_ok=True)
@@ -45,7 +64,7 @@ def health():
 
 
 @app.post("/chat")
-async def chat(request: Request):
+async def chat(request: Request, user=Depends(verify_user)):
     data = await request.json()
     user_message = data.get("message")
 
