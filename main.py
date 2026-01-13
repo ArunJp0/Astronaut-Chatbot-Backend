@@ -49,6 +49,20 @@ async def chat(request: Request):
     data = await request.json()
     user_message = data.get("message")
 
+    MAX_MESSAGE_LENGTH = 500
+
+    if not user_message:
+        return JSONResponse(
+            {"error": "Message is required"},
+            status_code=400
+        )
+
+    if len(user_message) > MAX_MESSAGE_LENGTH:
+        return JSONResponse(
+            {"error": "Message too long. Please keep it under 500 characters."},
+            status_code=400
+        )
+
     prompt = f"""
     {SYSTEM_PROMPT}
 
@@ -65,16 +79,7 @@ async def chat(request: Request):
         status_code=500
     )
 
-MAX_MESSAGE_LENGTH = 500
 
-if not user_message:
-    return JSONResponse({"error": "Message is required"}, status_code=400)
-
-if len(user_message) > MAX_MESSAGE_LENGTH:
-    return JSONResponse(
-        {"error": "Message too long. Please keep it under 500 characters."},
-        status_code=400
-    )
 
 
 @app.post("/voice-chat")
