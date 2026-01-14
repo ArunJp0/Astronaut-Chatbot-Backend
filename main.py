@@ -91,9 +91,14 @@ async def chat(request: Request, user=Depends(verify_user)):
 
     try:
      response = model.generate_content(prompt)
-     return JSONResponse({"reply": response.text})
+     print(response)
+     reply = ""
+     if response.candidates and response.candidates[0].content.parts:
+      reply = response.candidates[0].content.parts[0].text
+
+     return JSONResponse({"reply": reply})
     except Exception as e:
-     return JSONResponse(
+      return JSONResponse(
         {"error": str(e)},
         status_code=500
     )
