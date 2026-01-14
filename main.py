@@ -1,4 +1,4 @@
-from fastapi import FastAPI, Request, Depends
+from fastapi import FastAPI, Request
 from fastapi.responses import HTMLResponse, JSONResponse
 from fastapi.templating import Jinja2Templates
 import google.generativeai as genai
@@ -8,27 +8,8 @@ from faster_whisper import WhisperModel
 from fastapi import UploadFile, File
 from gtts import gTTS
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi import Header, HTTPException
-from supabase import create_client
 import uuid
 import os
-
-SUPABASE_URL = os.getenv("SUPABASE_URL")
-SUPABASE_ANON_KEY = os.getenv("SUPABASE_ANON_KEY")
-
-supabase = create_client(SUPABASE_URL, SUPABASE_ANON_KEY)
-
-def verify_user(authorization: str = Header(None)):
-    if not authorization:
-        raise HTTPException(status_code=401, detail="Missing auth token")
-
-    token = authorization.replace("Bearer ", "")
-    user = supabase.auth.get_user(token)
-
-    if not user:
-        raise HTTPException(status_code=401, detail="Invalid token")
-
-    return user
 
 # Ensure directories exist
 os.makedirs("static/audio", exist_ok=True)
@@ -36,7 +17,7 @@ os.makedirs("static/audio", exist_ok=True)
 # CONFIGURE GEMINI
 genai.configure(api_key=os.getenv("GEMINI_API_KEY"))
 
-model = genai.GenerativeModel("gemini-2.5-flash")
+model = genai.GenerativeModel("gemini-1.5-flash")
 
 whisper_model = WhisperModel("base")
 
@@ -64,7 +45,7 @@ def health():
 
 
 @app.post("/chat")
-async def chat(request: Request, user=Depends(verify_user)):
+async def chat(request: Request):
     data = await request.json()
     user_message = data.get("message")
 
@@ -90,13 +71,15 @@ async def chat(request: Request, user=Depends(verify_user)):
     """
 
     try:
-     response = model.generate_content(prompt)
-     print(response)
-     reply = ""
-     if response.candidates and response.candidates[0].content.parts:
-      reply = response.candidates[0].content.parts[0].text
+        response = model.generate_content(prompt)
+        print(response)
 
-     return JSONResponse({"reply": reply})
+        reply = ""
+        if response.candidates and response.candidates[0].content.parts:
+           reply = response.candidates[0].content.parts[0].text
+
+        return JSONResponse({"reply": reply})
+    
     except Exception as e:
       return JSONResponse(
         {"error": str(e)},
@@ -128,7 +111,9 @@ async def voice_chat(file: UploadFile = File(...)):
     """
 
     response = model.generate_content(prompt)
-    reply_text = response.text
+    reply_text = ""
+    if response.candidates and response.candidates[0].content.parts:
+       reply_text = response.candidates[0].content.parts[0].text
 
     # TEXT → VOICE (TTS)
     audio_reply_path = f"static/audio/{uuid.uuid4()}.mp3"
