@@ -6,13 +6,10 @@ from prompt import SYSTEM_PROMPT
 from fastapi.staticfiles import StaticFiles
 from faster_whisper import WhisperModel
 from fastapi import UploadFile, File
-from gtts import gTTS
 from fastapi.middleware.cors import CORSMiddleware
 import uuid
 import os
 
-# Ensure directories exist
-os.makedirs("static/audio", exist_ok=True)
 
 # CONFIGURE GEMINI
 genai.configure(api_key=os.getenv("GEMINI_API_KEY"))
@@ -92,15 +89,17 @@ async def chat(request: Request):
 @app.post("/voice-chat")
 async def voice_chat(file: UploadFile = File(...)):
 
-    # Save uploaded audio
-    audio_path = f"static/{uuid.uuid4()}.webm"
+    audio_path = f"temp_{uuid.uuid4()}.webm"
     with open(audio_path, "wb") as f:
         f.write(await file.read())
 
-    # VOICE → TEXT (STT)
+    # VOICE → TEXT
     segments, info = whisper_model.transcribe(audio_path)
     user_text = "".join(segment.text for segment in segments)
 
+    # Cleanup audio file
+    if os.path.exists(audio_path):
+        os.remove(audio_path)
 
     # AI RESPONSE
     prompt = f"""
@@ -113,14 +112,10 @@ async def voice_chat(file: UploadFile = File(...)):
     response = model.generate_content(prompt)
     reply_text = ""
     if response.candidates and response.candidates[0].content.parts:
-       reply_text = response.candidates[0].content.parts[0].text
-
-    # TEXT → VOICE (TTS)
-    audio_reply_path = f"static/audio/{uuid.uuid4()}.mp3"
-    tts = gTTS(reply_text)
-    tts.save(audio_reply_path)
+        reply_text = response.candidates[0].content.parts[0].text
 
     return {
-        "reply_text": reply_text,
-        "audio_reply": audio_reply_path
+        "user_text": user_text,
+        "reply_text": reply_text
     }
+
